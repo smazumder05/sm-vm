@@ -47,6 +47,7 @@ static inline uint16_t mw(uint16_t address, uint16_t value) {mem[address] = valu
 //From an implementation perspective, we will define an enum and access a register by an array reg[r3]
 enum registers {R0 =0, R1, R2, R3, R4,R5,R6, R7, PC,CND, CNT};
 uint16_t reg[CNT] = {0};
+enum flags { FP = 1 << 0, FZ = 1 << 1, FN = 1 << 2 };
 
 /* The INSTRUCTION SET
  *  Only 14 instructions, each instruction is encoded in a 16bit word as follows;
@@ -74,9 +75,27 @@ uint16_t reg[CNT] = {0};
  *       	0xD 	0b1101 	  	Unused OpCode
  *  lea 	0xE 	0b1110 	void lea(uint16_t i) 	Load effective address
  *  trap 	0xF 	0b1111 	void trap(uint16_t i) 	System trap/call/
+ *
+ * Regarding their order, instructions can be grouped together (based on their functionality) into 4 main categories:
+ *   1) br, jmp, jsr are used for the control flow of our programs: jumping from one instruction to another (similar to a go to statement) or conditional jumping (similar to an if statement);
+ *   3) ld, ldr, ldi, lea are used to to load data from the main memory to the registers;
+ *   3) st, str, sti are used to store data from the registers back to the main memory;
+ *   4) add, and, not are performing (mathematical) operations on the data kept in the registers.
  */
 #define OPC(i) ((i)>>12)
-
+#define DR(i) (((i)>>9)&0x7)
+#define SR1(i) (((i)>>6)&0x7)
+#define SR2(i) ((i)&0x7)
+#define FIMM(i) ((i>>5)&01)
+#define IMM(i) ((i)&0x1F)
+#define SEXTIMM(i) sext(IMM(i),5)
+#define FCND(i) (((i)>>9)&0x7)
+#define POFF(i) sext((i)&0x3F, 6)
+#define POFF9(i) sext((i)&0x1FF, 9)
+#define POFF11(i) sext((i)&0x7FF, 11)
+#define FL(i) (((i)>>11)&1)
+#define BR(i) (((i)>>6)&0x7)
+#define TRP(i) ((i)&0xFF)
 //Save all possible instructions and its associated functions  in an array. The index will represent the actual opcode
 //and the value will be a pointer to  the corresponding function.
 //op_ex_f op_ex[NOPS] = {
